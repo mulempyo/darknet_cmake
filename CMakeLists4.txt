@@ -32,7 +32,7 @@ find_package(PCL 1.8 REQUIRED COMPONENTS common io registration kdtree filters s
 # CUDA: 모던 CMake 방식
 # (Jetson/Ubuntu의 CMake 3.20에서도 CUDAToolkit 사용 가능)
 enable_language(CUDA)
-find_package(CUDAToolkit REQUIRED)  # 제공 타깃: CUDA::cudart, CUDA::cublas 등
+find_package(CUDA REQUIRED)  # 제공 타깃: CUDA::cudart, CUDA::cublas 등
 
 # g2o: 패키지 탐색 후 실패 시 수동 라이브러리 검색
 find_package(g2o QUIET)
