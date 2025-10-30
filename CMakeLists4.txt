@@ -130,17 +130,6 @@ target_link_libraries(graph_slam PUBLIC
   tf2_geometry_msgs::tf2_geometry_msgs
 )
 
-ament_target_dependencies(graph_slam
-  rclcpp
-  rclcpp_components
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  tf2
-  tf2_ros
-  tf2_geometry_msgs
-)
-
 # ------ Install ------
 install(DIRECTORY include/
   DESTINATION include/
