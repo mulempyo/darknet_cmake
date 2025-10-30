@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.18)
 project(graph_slam LANGUAGES CXX CUDA)
 
 # ------ Language & standards ------
@@ -66,7 +66,10 @@ else()
     ${G2O_TYPES_SLAM2D_ADDONS}
   )
   # g2o 헤더 경로
-  include_directories(/usr/local/include)
+  include_directories(/usr/local/include
+  /usr/local/cuda-10.2/include
+  ${CUDA_INCLUDE_DIRS}
+  )
 endif()
 
 # ------ CUDA kernel library (모던 방식) ------
