@@ -1,0 +1,181 @@
+cmake_minimum_required(VERSION 3.16)
+project(graph_slam LANGUAGES CXX CUDA)
+
+# ------ Language & standards ------
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# ------ ROS2 ------
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+# ------ 3rd party ------
+# Boost는 필요한 컴포넌트만 명시
+find_package(Boost REQUIRED COMPONENTS system thread)
+
+# PCL도 필요한 컴포넌트만 (불필요한 VTK AUTOINIT 줄임)
+find_package(PCL 1.8 REQUIRED COMPONENTS common io registration kdtree filters sample_consensus search)
+
+# CUDA: 모던 CMake 방식
+# (Jetson/Ubuntu의 CMake 3.20에서도 CUDAToolkit 사용 가능)
+enable_language(CUDA)
+find_package(CUDAToolkit REQUIRED)  # 제공 타깃: CUDA::cudart, CUDA::cublas 등
+
+# g2o: 패키지 탐색 후 실패 시 수동 라이브러리 검색
+find_package(g2o QUIET)
+if(g2o_FOUND)
+  message(STATUS "Found g2o via find_package")
+  set(G2O_LIBS
+    g2o_core
+    g2o_stuff
+    g2o_solver_pcg
+    g2o_solver_csparse
+    g2o_solver_cholmod
+    g2o_types_slam2d
+    g2o_types_slam2d_addons
+  )
+else()
+  message(WARNING "g2o Config not found; falling back to manual find_library paths in /usr/local/lib")
+  find_library(G2O_CORE_LIBRARY           g2o_core           PATHS /usr/local/lib REQUIRED)
+  find_library(G2O_STUFF_LIBRARY          g2o_stuff          PATHS /usr/local/lib REQUIRED)
+  find_library(G2O_SOLVER_PCG             g2o_solver_pcg     PATHS /usr/local/lib REQUIRED)
+  find_library(G2O_SOLVER_CSPARSE         g2o_solver_csparse PATHS /usr/local/lib REQUIRED)
+  find_library(G2O_SOLVER_CHOLMOD         g2o_solver_cholmod PATHS /usr/local/lib REQUIRED)
+  find_library(G2O_TYPES_SLAM2D           g2o_types_slam2d   PATHS /usr/local/lib REQUIRED)
+  find_library(G2O_TYPES_SLAM2D_ADDONS    g2o_types_slam2d_addons PATHS /usr/local/lib REQUIRED)
+  set(G2O_LIBS
+    ${G2O_CORE_LIBRARY}
+    ${G2O_STUFF_LIBRARY}
+    ${G2O_SOLVER_PCG}
+    ${G2O_SOLVER_CSPARSE}
+    ${G2O_SOLVER_CHOLMOD}
+    ${G2O_TYPES_SLAM2D}
+    ${G2O_TYPES_SLAM2D_ADDONS}
+  )
+  # g2o 헤더 경로
+  include_directories(/usr/local/include)
+endif()
+
+# ------ CUDA kernel library (모던 방식) ------
+# .cu를 별도 라이브러리로 컴파일 후 메인 타깃에서 링크
+add_library(graph_slam_cuda STATIC
+  src/icp_cuda.cu
+)
+
+# NVCC 옵션 (필요 시 추가)
+target_compile_options(graph_slam_cuda PRIVATE
+  $<$<COMPILE_LANGUAGE:CUDA>:--ftz=true --prec-div=false --prec-sqrt=false>
+)
+
+# CUDA에서 fPIC 필요하면 자동으로 처리되지만, 명시해 둠
+set_target_properties(graph_slam_cuda PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+  CUDA_SEPARABLE_COMPILATION ON
+)
+
+target_include_directories(graph_slam_cuda PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_link_libraries(graph_slam_cuda PRIVATE
+  CUDA::cudart
+)
+
+# ------ Main executable ------
+add_executable(graph_slam
+  src/main.cpp
+  src/slam_algorithm.cpp
+  src/robust_kernel_io.cpp
+  src/slam.cpp
+  src/icp_wrapper.cpp
+)
+
+# include는 타깃 단위로
+target_include_directories(graph_slam PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${PCL_INCLUDE_DIRS}
+)
+
+# 절대 -D 붙이지 말 것! (빈 -D 사고 방지)
+# 필요한 매크로가 있다면 이렇게:
+# target_compile_definitions(graph_slam PRIVATE SOME_FLAG=1)
+
+# 링크는 모던 타깃 우선
+target_link_libraries(graph_slam PRIVATE
+  Boost::system
+  Boost::thread
+  ${G2O_LIBS}
+  PCL::common
+  PCL::io
+  PCL::registration
+  PCL::kdtree
+  PCL::filters
+  PCL::sample_consensus
+  PCL::search
+  CUDA::cudart
+  graph_slam_cuda
+  tf2_geometry_msgs::tf2_geometry_msgs
+)
+
+ament_target_dependencies(graph_slam
+  rclcpp
+  rclcpp_components
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+
+# ------ Install ------
+install(DIRECTORY include/
+  DESTINATION include/
+)
+
+install(DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(TARGETS graph_slam
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+# (필요하다면 CUDA 라이브러리도 설치)
+# install(TARGETS graph_slam_cuda
+#   ARCHIVE DESTINATION lib
+#   LIBRARY DESTINATION lib
+# )
+
+# ------ Lint / Export ------
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_export_include_directories(include)
+ament_export_dependencies(
+  rclcpp
+  rclcpp_components
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+
+ament_package()
