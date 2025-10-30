@@ -67,6 +67,7 @@ else()
   )
   # g2o 헤더 경로
   include_directories(/usr/local/include
+  ${PCL_INCLUDE_DIRS}
   /usr/local/cuda-10.2/include
   ${CUDA_INCLUDE_DIRS}
   )
@@ -121,15 +122,7 @@ target_link_libraries(graph_slam PUBLIC
   Boost::system
   Boost::thread
   ${G2O_LIBS}
-  PCL::common
-  PCL::io
-  PCL::registration
-  PCL::kdtree
-  PCL::filters
-  PCL::sample_consensus
-  PCL::search
-  CUDA::cudart
-  graph_slam_cuda
+  ${PCL_LIBRARIES}
   tf2_geometry_msgs::tf2_geometry_msgs
 )
 
