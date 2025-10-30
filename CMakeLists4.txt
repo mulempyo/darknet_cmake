@@ -66,7 +66,6 @@ else()
   include_directories(/usr/local/include
   ${PCL_INCLUDE_DIRS}
   /usr/local/cuda-10.2/include
-  ${CUDA_INCLUDE_DIRS}
   )
 endif()
 
@@ -101,7 +100,6 @@ target_link_libraries(graph_slam PUBLIC
   Boost::thread
   ${G2O_LIBS}
   ${PCL_LIBRARIES}
-  ${CUDA_LIBRARIES}
   ${PROJECT_NAME}_kernel
   tf2_geometry_msgs::tf2_geometry_msgs
 )
