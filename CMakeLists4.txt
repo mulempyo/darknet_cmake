@@ -73,31 +73,6 @@ else()
   )
 endif()
 
-# ------ CUDA kernel library (모던 방식) ------
-# .cu를 별도 라이브러리로 컴파일 후 메인 타깃에서 링크
-add_library(graph_slam_cuda STATIC
-  src/icp_cuda.cu
-)
-
-# NVCC 옵션 (필요 시 추가)
-target_compile_options(graph_slam_cuda PRIVATE
-  $<$<COMPILE_LANGUAGE:CUDA>:--ftz=true --prec-div=false --prec-sqrt=false>
-)
-
-# CUDA에서 fPIC 필요하면 자동으로 처리되지만, 명시해 둠
-set_target_properties(graph_slam_cuda PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  CUDA_SEPARABLE_COMPILATION ON
-)
-
-target_include_directories(graph_slam_cuda PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(graph_slam_cuda PRIVATE
-  CUDA::cudart
-)
-
 # ------ Main executable ------
 add_executable(graph_slam
   src/main.cpp
@@ -138,12 +113,6 @@ install(DIRECTORY launch config
 install(TARGETS graph_slam
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
-
-# (필요하다면 CUDA 라이브러리도 설치)
-# install(TARGETS graph_slam_cuda
-#   ARCHIVE DESTINATION lib
-#   LIBRARY DESTINATION lib
-# )
 
 # ------ Lint / Export ------
 if(BUILD_TESTING)
