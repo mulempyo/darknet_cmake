@@ -61,10 +61,6 @@ set(dependencies
   tf2
   tf2_ros
   tf2_geometry_msgs
-  PCL
-  Threads
-  Boost
-  CUDA
 )
 
 add_executable(graph_slam
