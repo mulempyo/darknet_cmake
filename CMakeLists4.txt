@@ -73,8 +73,6 @@ add_executable(graph_slam
 
 target_link_libraries(graph_slam
   ${Boost_LIBRARIES}
-  -lboost_thread
-  -lboost_system
   ${PCL_LIBRARIES}
   ${G2O_CORE_LIBRARY}
   ${G2O_STUFF_LIBRARY}
