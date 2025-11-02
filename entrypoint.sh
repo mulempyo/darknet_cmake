@@ -12,3 +12,5 @@ colcon build --packages-up-to darknet_ros darknet_ros_3d
 if [ -f ./install/setup.bash ]; then
   source ./install/setup.bash
 fi
+
+exec bash -l
