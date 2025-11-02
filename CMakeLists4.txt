@@ -1,0 +1,116 @@
+cmake_minimum_required(VERSION 3.5)
+project(graph_slam)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+find_package(CUDA REQUIRED)
+find_package(Threads REQUIRED)
+find_package(Boost REQUIRED)
+find_package(PCL REQUIRED)
+
+set(G2O_INCLUDE_DIRS /usr/local/include)
+set(G2O_CORE_LIBRARY /usr/local/lib/libg2o_core.so)
+set(G2O_STUFF_LIBRARY /usr/local/lib/libg2o_stuff.so)
+set(G2O_SOLVER_PCG /usr/local/lib/libg2o_solver_pcg.so)
+set(G2O_SOLVER_CSPARSE /usr/local/lib/libg2o_solver_csparse.so)
+set(G2O_SOLVER_CHOLMOD /usr/local/lib/libg2o_solver_cholmod.so)
+set(G2O_TYPES_SLAM2D /usr/local/lib/libg2o_types_slam2d.so)
+set(G2O_TYPES_SLAM2D_ADDONS /usr/local/lib/libg2o_types_slam2d_addons.so)
+
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-Xcompiler;-fPIC" CACHE STRING "nvcc flags" FORCE)
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "--ftz=true;--prec-div=false;--prec-sqrt=false")
+set(CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
+cuda_add_library(${PROJECT_NAME}_kernel SHARED src/icp_cuda.cu)
+set_target_properties(${PROJECT_NAME}_kernel PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+include_directories(
+  include
+  ${PCL_INCLUDE_DIRS}
+  ${G2O_INCLUDE_DIRS}
+  /usr/local/cuda-10.2/include
+  ${CUDA_INCLUDE_DIRS}
+)
+
+set(library_name ${PROJECT_NAME})
+
+
+set(dependencies
+  rclcpp
+  rclcpp_components
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+
+add_executable(graph_slam
+  src/main.cpp
+  src/slam_algorithm.cpp 
+  src/robust_kernel_io.cpp 
+  src/slam.cpp
+  src/icp_wrapper.cpp
+)
+
+target_link_libraries(graph_slam
+  ${Boost_LIBRARIES}
+  ${PCL_LIBRARIES}
+  ${G2O_CORE_LIBRARY}
+  ${G2O_STUFF_LIBRARY}
+  ${G2O_SOLVER_PCG}
+  ${G2O_SOLVER_CSPARSE}
+  ${G2O_SOLVER_CHOLMOD}
+  ${G2O_TYPES_SLAM2D}
+  ${G2O_TYPES_SLAM2D_ADDONS}
+  ${CUDA_LIBRARIES}
+  ${PROJECT_NAME}_kernel
+  tf2_geometry_msgs::tf2_geometry_msgs
+)
+  
+ament_target_dependencies(graph_slam
+  ${dependencies}
+)  
+
+install(DIRECTORY include/ 
+  DESTINATION include/
+)
+
+install(
+  DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(TARGETS graph_slam
+  DESTINATION lib/graph_slam
+)
+  
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+#pluginlib_export_plugin_description_file(rclcpp_components plugin.xml)
+
+ament_export_include_directories(include)
+ament_export_libraries(${library_name})
+ament_export_dependencies(${dependencies})
+ament_package()
