@@ -23,8 +23,8 @@ find_package(tf2_geometry_msgs REQUIRED)
 
 find_package(CUDA REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system filesystem thread program_options iostreams serialization)
-find_package(PCL REQUIRED COMPONENTS common io filters registration)
+find_package(Boost REQUIRED)
+find_package(PCL REQUIRED)
 
 set(G2O_INCLUDE_DIRS /usr/local/include)
 set(G2O_CORE_LIBRARY /usr/local/lib/libg2o_core.so)
