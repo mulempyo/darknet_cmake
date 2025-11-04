@@ -31,7 +31,7 @@ set(G2O_CORE_LIBRARY /usr/local/lib/libg2o_core.so)
 set(G2O_STUFF_LIBRARY /usr/local/lib/libg2o_stuff.so)
 set(G2O_SOLVER_PCG /usr/local/lib/libg2o_solver_pcg.so)
 set(G2O_SOLVER_CSPARSE /usr/local/lib/libg2o_solver_csparse.so)
-set(G2O_SOLVER_CHOLMOD /usr/local/lib/libg2o_solver_cholmod.so)
+#set(G2O_SOLVER_CHOLMOD /usr/local/lib/libg2o_solver_cholmod.so)
 set(G2O_TYPES_SLAM2D /usr/local/lib/libg2o_types_slam2d.so)
 set(G2O_TYPES_SLAM2D_ADDONS /usr/local/lib/libg2o_types_slam2d_addons.so)
 
