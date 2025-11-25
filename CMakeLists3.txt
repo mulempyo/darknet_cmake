@@ -30,7 +30,6 @@ add_library(influx_component SHARED src/influxdb.cpp)
 ament_target_dependencies(influx_component
   rclcpp
   rclcpp_components
-  diagnostic_msgs
 )
 
 ament_export_dependencies(influx_component ${dependencies})
