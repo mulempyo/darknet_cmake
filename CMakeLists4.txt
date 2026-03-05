@@ -102,6 +102,10 @@ install(
 install(TARGETS graph_slam
   DESTINATION lib/graph_slam
 )
+
+install(TARGETS graph_slam graph_slam_kernel
+  DESTINATION lib/graph_slam
+)
  
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
